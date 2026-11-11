@@ -1,0 +1,90 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planning de la semaine — Bad Ass</title>
+<style>
+:root{color-scheme:light;--bg:#f5f1ea;--card:#fff;--line:#e3ddd1;--txt:#211c16;--mut:#8c8073;--accent:#c23b22;--gold:#c2882a;--ok:#1d6b32;}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;padding:14px;max-width:640px;margin:0 auto;}
+h1{font-size:19px;margin:4px 0 2px;}
+.sub{color:var(--mut);font-size:13px;margin-bottom:12px;}
+.bars{display:flex;gap:8px;margin-bottom:12px;}
+.barb{flex:1;padding:10px;border-radius:20px;border:1px solid var(--line);background:#fff;font-size:14px;cursor:pointer;}
+.barb.act{background:var(--accent);color:#fff;border-color:var(--accent);}
+.day{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
+.day.closed{opacity:.55;}
+.dhead{display:flex;align-items:center;justify-content:space-between;}
+.dname{font-size:15px;font-weight:600;}
+.row{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:14px;}
+.row input[type=checkbox]{width:18px;height:18px;flex:none;}
+.sw{position:relative;width:48px;height:27px;border-radius:20px;background:#cfc8bb;cursor:pointer;flex:none;}
+.sw.on{background:var(--accent);}
+.sw b{position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:left .15s;}
+.sw.on b{left:24px;}
+.tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;flex:none;}
+.t-event{color:#8a2d16;background:#f6ddd3;}.t-ouverture{color:#7a5410;background:#f6e6c8;}.t-fermeture{color:#555;background:#e8e4da;}
+.addbar{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.addbar select,.addbar input{padding:8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;}
+.addbar input{flex:1;min-width:120px;}
+.addbar button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+.muted{font-size:12px;color:var(--mut);padding-top:3px;}
+.gen{display:block;width:100%;background:#25D366;color:#fff;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px;text-align:center;text-decoration:none;}
+.gen.off{background:#bdb7aa;pointer-events:none;}
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:10px;display:none;}
+.code{font-family:ui-monospace,monospace;font-size:12px;background:#f2ede4;border:1px solid var(--line);border-radius:8px;padding:9px;word-break:break-all;max-height:120px;overflow:auto;}
+.cpy{margin-top:8px;background:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;}
+</style></head><body>
+<h1>Planning de la semaine</h1>
+<div class="sub">Bad Ass Bar — semaine du <span id="du"></span> au <span id="au"></span></div>
+<div class="bars" id="bars"></div>
+<div id="list"></div>
+<a class="gen" id="gen" href="#" onclick="return valider()"><span id="genlab">Valider mon planning</span></a>
+<div class="panel" id="panel">
+  <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Planning <span id="pbar"></span> prêt ✓</div>
+  <a class="gen" id="wa" href="#" target="_blank" rel="noopener" style="margin:0 0 10px;">Envoyer à Mathis sur WhatsApp</a>
+  <div class="muted" style="padding-bottom:8px;">Si WhatsApp ne s'ouvre pas, copie ce code et envoie-le à Mathis :</div>
+  <div class="code" id="code"></div>
+  <button class="cpy" onclick="copier()">Copier le code</button>
+</div>
+<script>
+const MATHIS='33633716708';
+const SEM={"du": "2026-11-09", "au": "2026-11-15"};
+const WEEK={"Arras": [{"d": "Lundi", "date": "2026-11-09", "open": false, "matches": [], "entries": []}, {"d": "Mardi", "date": "2026-11-10", "open": true, "matches": [], "entries": []}, {"d": "Mercredi", "date": "2026-11-11", "open": true, "matches": [], "entries": [{"tag": "ouverture", "desc": "Férié : Armistice", "on": false}]}, {"d": "Jeudi", "date": "2026-11-12", "open": true, "matches": [{"t": "ITALIE // FRANCE", "h": "20:45", "sport": "foot", "on": false}], "entries": []}, {"d": "Vendredi", "date": "2026-11-13", "open": true, "matches": [{"t": "FRANCE // SOUTH AFRICA", "h": "21:10", "sport": "rugby", "on": false}], "entries": []}, {"d": "Samedi", "date": "2026-11-14", "open": true, "matches": [], "entries": []}, {"d": "Dimanche", "date": "2026-11-15", "open": true, "matches": [], "entries": []}], "Béthune": [{"d": "Lundi", "date": "2026-11-09", "open": false, "matches": [], "entries": []}, {"d": "Mardi", "date": "2026-11-10", "open": true, "matches": [], "entries": []}, {"d": "Mercredi", "date": "2026-11-11", "open": true, "matches": [], "entries": [{"tag": "ouverture", "desc": "Férié : Armistice", "on": false}]}, {"d": "Jeudi", "date": "2026-11-12", "open": true, "matches": [{"t": "ITALIE // FRANCE", "h": "20:45", "sport": "foot", "on": false}], "entries": []}, {"d": "Vendredi", "date": "2026-11-13", "open": true, "matches": [{"t": "FRANCE // SOUTH AFRICA", "h": "21:10", "sport": "rugby", "on": false}], "entries": []}, {"d": "Samedi", "date": "2026-11-14", "open": true, "matches": [], "entries": []}, {"d": "Dimanche", "date": "2026-11-15", "open": true, "matches": [], "entries": []}]};
+const TAGS={event:{l:'Event',c:'t-event'},ouverture:{l:'Ouverture except.',c:'t-ouverture'},fermeture:{l:'Fermeture except.',c:'t-fermeture'}};
+let BAR=Object.keys(WEEK)[0];
+document.getElementById('du').textContent=fmt(SEM.du);document.getElementById('au').textContent=fmt(SEM.au);
+function fmt(s){if(!s)return'?';const[a,b,c]=s.split('-');return c+'/'+b;}
+const list=document.getElementById('list');
+function bars(){const b=document.getElementById('bars');b.innerHTML='';Object.keys(WEEK).forEach(x=>{const el=document.createElement('button');el.className='barb'+(x===BAR?' act':'');el.textContent=x;el.onclick=()=>{BAR=x;document.getElementById('panel').style.display='none';bars();render();};b.appendChild(el);});}
+function toggleDay(i){WEEK[BAR][i].open=!WEEK[BAR][i].open;render();}
+function addEntry(i,wrap){const tag=wrap.querySelector('select').value;const inp=wrap.querySelector('input');const v=inp.value.trim();if(!v)return;WEEK[BAR][i].entries.push({tag:tag,desc:v,on:true});render();}
+function render(){const W=WEEK[BAR];list.innerHTML='';W.forEach((day,i)=>{
+ const card=document.createElement('div');card.className='day'+(day.open?'':' closed');
+ let h='<div class="dhead"><span class="dname">'+day.d+' '+fmt(day.date)+'</span><span style="display:flex;align-items:center;gap:8px;"><span class="muted">'+(day.open?'Ouvert':'Fermé')+'</span><span class="sw'+(day.open?' on':'')+'" onclick="toggleDay('+i+')"><b></b></span></span></div>';
+ if(day.open){
+  day.matches.forEach((m,mi)=>{h+='<label class="row"><input type="checkbox" '+(m.on?'checked':'')+' onchange="WEEK[BAR]['+i+'].matches['+mi+'].on=this.checked"><span><b>'+m.t+'</b> <span style="color:var(--mut)">'+m.h+'</span></span></label>';});
+  day.entries.forEach((e,ei)=>{const t=TAGS[e.tag];h+='<label class="row"><input type="checkbox" '+(e.on?'checked':'')+' onchange="WEEK[BAR]['+i+'].entries['+ei+'].on=this.checked"><span class="tag '+t.c+'">'+t.l+'</span><span>'+e.desc+'</span></label>';});
+  let opts='';for(const k in TAGS)opts+='<option value="'+k+'">'+TAGS[k].l+'</option>';
+  h+='<div class="addbar"><select>'+opts+'</select><input placeholder="description (ex. Soirée mix · 21h)"><button onclick="addEntry('+i+',this.parentNode)">+</button></div>';
+  if(!day.matches.length&&!day.entries.length)h+='<div class="muted">Ouvert, rien de prévu — n\'apparaîtra pas.</div>';
+ }else{h+='<div class="muted">Fermé</div>';}
+ card.innerHTML=h;list.appendChild(card);});
+}
+function planFor(bar){return WEEK[bar].filter(d=>d.open&&(d.matches.some(m=>m.on)||d.entries.some(e=>e.on))).map(d=>({jour:d.d,date:d.date,matchs:d.matches.filter(m=>m.on).map(m=>({t:m.t,h:m.h,sport:m.sport})),entries:d.entries.filter(e=>e.on).map(e=>({tag:e.tag,desc:e.desc}))}));}
+function valider(){
+ const plan=planFor(BAR);
+ const payload={bar:BAR,semaine:SEM,jours:plan};
+ const code=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+ let resume='Planning '+BAR+' ('+fmt(SEM.du)+'→'+fmt(SEM.au)+') :\n';
+ plan.forEach(d=>{const items=d.matchs.map(m=>m.t+' '+m.h).concat(d.entries.map(e=>e.desc));resume+='• '+d.jour+' : '+(items.join(' · ')||'—')+'\n';});
+ const msg=resume+'\nCODE:'+code;
+ if(!plan.length){alert('Rien de coché pour '+BAR+' : coche au moins un match ou un event.');return false;}
+ document.getElementById('pbar').textContent=BAR;
+ document.getElementById('code').textContent=code;
+ const wa=document.getElementById('wa');wa.href='https://wa.me/'+MATHIS+'?text='+encodeURIComponent(msg);
+ document.getElementById('panel').style.display='block';
+ document.getElementById('panel').scrollIntoView({behavior:'smooth'});
+ return false;
+}
+function copier(){const t=document.getElementById('code').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);}
+bars();render();
+</script></body></html>
