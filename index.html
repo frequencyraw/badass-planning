@@ -39,14 +39,16 @@ h1{font-size:19px;margin:4px 0 2px;}
 <div id="list"></div>
 <a class="gen" id="gen" href="#" onclick="return valider()"><span id="genlab">Valider mon planning</span></a>
 <div class="panel" id="panel">
-  <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Planning <span id="pbar"></span> prêt ✓</div>
-  <a class="gen" id="wa" href="#" target="_blank" rel="noopener" style="margin:0 0 10px;">Envoyer à Mathis sur WhatsApp</a>
-  <div class="muted" style="padding-bottom:8px;">Si WhatsApp ne s'ouvre pas, copie ce code et envoie-le à Mathis :</div>
-  <div class="code" id="code"></div>
-  <button class="cpy" onclick="copier()">Copier le code</button>
+  <div style="font-size:15px;font-weight:600;margin-bottom:6px;" id="ptitle">Envoi…</div>
+  <div class="muted" id="pmsg"></div>
+  <div id="fallback" style="display:none;margin-top:10px;">
+    <div class="muted" style="padding-bottom:8px;">L'envoi automatique a échoué. Copie ce code et envoie-le à Mathis :</div>
+    <div class="code" id="code"></div>
+    <button class="cpy" onclick="copier()">Copier le code</button>
+  </div>
 </div>
 <script>
-const MATHIS='33633716708';
+const TOPIC="badass-tcho-3d97b46b9fb2e13982cd";
 const SEM={"du": "2026-11-16", "au": "2026-11-22"};
 const WEEK={"Arras": [{"d": "Lundi", "date": "2026-11-16", "open": false, "matches": [], "entries": []}, {"d": "Mardi", "date": "2026-11-17", "open": true, "matches": [], "entries": []}, {"d": "Mercredi", "date": "2026-11-18", "open": true, "matches": [], "entries": []}, {"d": "Jeudi", "date": "2026-11-19", "open": true, "matches": [], "entries": [{"tag": "event", "desc": "Beaujolais", "on": true}]}, {"d": "Vendredi", "date": "2026-11-20", "open": true, "matches": [{"t": "TROYES // HAVRE", "h": "20:45", "sport": "foot", "on": false}], "entries": []}, {"d": "Samedi", "date": "2026-11-21", "open": true, "matches": [{"t": "NICE // PSG", "h": "17:15", "sport": "foot", "on": false}, {"t": "MONACO // AUXERRE", "h": "20:45", "sport": "foot", "on": false}, {"t": "LENS // TOULOUSE", "h": "20:45", "sport": "foot", "on": false}, {"t": "LILLE // LYON", "h": "20:45", "sport": "foot", "on": false}, {"t": "STRASBOURG // BREST", "h": "20:45", "sport": "foot", "on": false}], "entries": []}, {"d": "Dimanche", "date": "2026-11-22", "open": true, "matches": [{"t": "PARIS FC // ANGERS", "h": "15:00", "sport": "foot", "on": false}, {"t": "LORIENT // RENNES", "h": "17:15", "sport": "foot", "on": false}, {"t": "OM // LEMANS", "h": "20:45", "sport": "foot", "on": false}], "entries": []}], "Béthune": [{"d": "Lundi", "date": "2026-11-16", "open": false, "matches": [], "entries": []}, {"d": "Mardi", "date": "2026-11-17", "open": true, "matches": [], "entries": []}, {"d": "Mercredi", "date": "2026-11-18", "open": true, "matches": [], "entries": []}, {"d": "Jeudi", "date": "2026-11-19", "open": true, "matches": [], "entries": [{"tag": "event", "desc": "Beaujolais", "on": true}]}, {"d": "Vendredi", "date": "2026-11-20", "open": true, "matches": [{"t": "TROYES // HAVRE", "h": "20:45", "sport": "foot", "on": false}], "entries": []}, {"d": "Samedi", "date": "2026-11-21", "open": true, "matches": [{"t": "NICE // PSG", "h": "17:15", "sport": "foot", "on": false}, {"t": "MONACO // AUXERRE", "h": "20:45", "sport": "foot", "on": false}, {"t": "LENS // TOULOUSE", "h": "20:45", "sport": "foot", "on": false}, {"t": "LILLE // LYON", "h": "20:45", "sport": "foot", "on": false}, {"t": "STRASBOURG // BREST", "h": "20:45", "sport": "foot", "on": false}], "entries": []}, {"d": "Dimanche", "date": "2026-11-22", "open": true, "matches": [{"t": "PARIS FC // ANGERS", "h": "15:00", "sport": "foot", "on": false}, {"t": "LORIENT // RENNES", "h": "17:15", "sport": "foot", "on": false}, {"t": "OM // LEMANS", "h": "20:45", "sport": "foot", "on": false}], "entries": []}]};
 const TAGS={event:{l:'Event',c:'t-event'},ouverture:{l:'Ouverture except.',c:'t-ouverture'},fermeture:{l:'Fermeture except.',c:'t-fermeture'}};
@@ -76,13 +78,20 @@ function valider(){
  const code=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
  let resume='Planning '+BAR+' ('+fmt(SEM.du)+'→'+fmt(SEM.au)+') :\n';
  plan.forEach(d=>{const items=d.matchs.map(m=>m.t+' '+m.h).concat(d.entries.map(e=>e.desc));resume+='• '+d.jour+' : '+(items.join(' · ')||'—')+'\n';});
- const msg=resume+'\nCODE:'+code;
  if(!plan.length){alert('Rien de coché pour '+BAR+' : coche au moins un match ou un event.');return false;}
- document.getElementById('pbar').textContent=BAR;
+ const panel=document.getElementById('panel');panel.style.display='block';
+ document.getElementById('ptitle').textContent='Envoi du planning '+BAR+'…';
+ document.getElementById('pmsg').textContent='';document.getElementById('fallback').style.display='none';
  document.getElementById('code').textContent=code;
- const wa=document.getElementById('wa');wa.href='https://wa.me/'+MATHIS+'?text='+encodeURIComponent(msg);
- document.getElementById('panel').style.display='block';
- document.getElementById('panel').scrollIntoView({behavior:'smooth'});
+ panel.scrollIntoView({behavior:'smooth'});
+ // Envoi direct à Mathis (notification + récupération auto par son Mac)
+ const url='https://ntfy.sh/'+TOPIC+'?title='+encodeURIComponent('Planning '+BAR+' validé ('+fmt(SEM.du)+'→'+fmt(SEM.au)+')')+'&tags=calendar';
+ fetch(url,{method:'POST',body:JSON.stringify(payload)})
+  .then(r=>{if(!r.ok)throw new Error(r.status);
+    document.getElementById('ptitle').textContent='Planning '+BAR+' envoyé ✓';
+    document.getElementById('pmsg').textContent='Mathis l\'a bien reçu, la story va être préparée. Tu peux fermer la page.';})
+  .catch(e=>{document.getElementById('ptitle').textContent='Envoi impossible';
+    document.getElementById('fallback').style.display='block';});
  return false;
 }
 function copier(){const t=document.getElementById('code').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);}
