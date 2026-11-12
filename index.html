@@ -32,12 +32,39 @@ h1{font-size:19px;margin:4px 0 2px;}
 .panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:10px;display:none;}
 .code{font-family:ui-monospace,monospace;font-size:12px;background:#f2ede4;border:1px solid var(--line);border-radius:8px;padding:9px;word-break:break-all;max-height:120px;overflow:auto;}
 .cpy{margin-top:8px;background:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;}
+.seg{display:flex;background:#e9e3d8;border-radius:12px;padding:4px;margin:4px 0 14px;}
+.seg button{flex:1;border:none;background:none;padding:10px;border-radius:9px;font-size:14px;font-weight:600;color:var(--mut);cursor:pointer;}
+.seg button.act{background:#fff;color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.form{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;}
+.form label{display:block;font-size:13px;color:var(--mut);margin:10px 0 5px;}
+.form input,.form textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;font-size:15px;background:#fff;font-family:inherit;color:var(--txt);}
+.form textarea{min-height:70px;resize:vertical;}
+.two{display:flex;gap:10px;}.two>div{flex:1;}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:8px;color:var(--txt);}
+.chk input{width:18px;height:18px;}
+.barsel{display:flex;gap:6px;}
+.barsel button{flex:1;padding:10px 6px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:14px;cursor:pointer;}
+.barsel button.act{background:var(--accent);border-color:var(--accent);color:#fff;}
 </style></head><body>
 <h1>Planning de la semaine</h1>
 <div class="sub">Bad Ass Bar — semaine du <span id="du"></span> au <span id="au"></span></div>
+<div class="seg"><button class="act" id="sg1" onclick="vue(1)">Programme de la semaine</button><button id="sg2" onclick="vue(2)">Ajouter un événement</button></div>
+<div id="vue1">
 <div class="bars" id="bars"></div>
 <div id="list"></div>
 <a class="gen" id="gen" href="#" onclick="return valider()"><span id="genlab">Valider mon planning</span></a>
+</div>
+<div id="vue2" style="display:none">
+ <div class="form">
+  <label>Nom de l'événement</label><input id="evt" placeholder="ex. Soirée mix DJ, Blind test, Closing…">
+  <div class="two"><div><label>Date</label><input type="date" id="evd"></div><div><label>Heure</label><input type="time" id="evh" value="20:00"></div></div>
+  <label class="chk"><input type="checkbox" id="evj" onchange="document.getElementById('evh').disabled=this.checked"> Toute la journée</label>
+  <label>Bar</label><div class="barsel" id="evbars"></div>
+  <label>Infos (facultatif)</label><textarea id="evn" placeholder="tarif, artiste, réservation…"></textarea>
+ </div>
+ <a class="gen" href="#" onclick="return envoyerEvent()">Ajouter au calendrier</a>
+ <div class="muted" style="text-align:center;padding-top:8px;">L'événement est ajouté au calendrier Bad Ass et Mathis est prévenu.</div>
+</div>
 <div class="panel" id="panel">
   <div style="font-size:15px;font-weight:600;margin-bottom:6px;" id="ptitle">Envoi…</div>
   <div class="muted" id="pmsg"></div>
@@ -96,5 +123,31 @@ function valider(){
  return false;
 }
 function copier(){const t=document.getElementById('code').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);}
+
+/* ---------- ajout d'événement ---------- */
+const BARS=Object.keys(WEEK);let EVB='*';
+function vue(n){document.getElementById('vue1').style.display=n===1?'':'none';document.getElementById('vue2').style.display=n===2?'':'none';
+ document.getElementById('sg1').classList.toggle('act',n===1);document.getElementById('sg2').classList.toggle('act',n===2);document.getElementById('panel').style.display='none';}
+function evbars(){const w=document.getElementById('evbars');w.innerHTML='';BARS.concat(['*']).forEach(b=>{const x=document.createElement('button');x.textContent=b==='*'?'Les deux':b;x.className=EVB===b?'act':'';x.onclick=()=>{EVB=b;evbars();};w.appendChild(x);});}
+(function(){const t=new Date();const iso=new Date(t.getTime()-t.getTimezoneOffset()*60000).toISOString().slice(0,10);const d=document.getElementById('evd');d.min=iso;d.value=SEM.du&&SEM.du>iso?SEM.du:iso;evbars();})();
+function envoyerEvent(){
+ const titre=document.getElementById('evt').value.trim(),date=document.getElementById('evd').value,jour=document.getElementById('evj').checked;
+ const heure=jour?'':document.getElementById('evh').value,notes=document.getElementById('evn').value.trim();
+ if(!titre||!date){alert('Indique au moins le nom et la date de l\'événement.');return false;}
+ const bars=EVB==='*'?BARS:[EVB];
+ const data={type:'event',titre:titre,date:date,heure:heure,bars:bars,notes:notes};
+ const code=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+ const lab=(EVB==='*'?'Arras + Béthune':EVB);
+ const corps=titre+'\n'+fmt(date)+' · '+(heure||'toute la journée')+' · '+lab+(notes?'\n'+notes:'')+'\n\nEVENT:'+code;
+ const panel=document.getElementById('panel');panel.style.display='block';
+ document.getElementById('ptitle').textContent='Envoi de l\'événement…';document.getElementById('pmsg').textContent='';
+ document.getElementById('fallback').style.display='none';document.getElementById('code').textContent='EVENT:'+code;
+ fetch('https://ntfy.sh/'+TOPIC+'?title='+encodeURIComponent('Nouvel événement — '+lab)+'&tags=tada',{method:'POST',body:corps})
+  .then(r=>{if(!r.ok)throw new Error(r.status);
+   document.getElementById('ptitle').textContent='Événement ajouté ✓';
+   document.getElementById('pmsg').textContent='« '+titre+' » sera dans le calendrier Bad Ass d\'ici quelques minutes. Mathis est prévenu.';
+   document.getElementById('evt').value='';document.getElementById('evn').value='';})
+  .catch(e=>{document.getElementById('ptitle').textContent='Envoi impossible';document.getElementById('fallback').style.display='block';});
+ panel.scrollIntoView({behavior:'smooth'});return false;}
 bars();render();
 </script></body></html>
