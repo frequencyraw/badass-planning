@@ -1,6 +1,7 @@
 <!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f6f1ea">
+<meta name="robots" content="noindex,nofollow">
 <title>Espace Bad Ass</title>
 <style>
 :root{--bg:#f6f1ea;--card:#fff;--line:#ebe3d7;--txt:#1d1814;--mut:#8b7f72;--dim:#b9aea1;--red:#d6352a;--red-s:#fbe7e4;--green:#1f9d55;--green-s:#e3f4ea;--amber:#b7791f;--amber-s:#fbf0dc;--r:16px}
@@ -159,12 +160,20 @@ const CHECK='<svg class="ic ck" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/><
 const CK='<svg class="ic" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
 const BARS=Object.keys(WEEK);
 let V=1,BAR=BARS[0],SENT={},EVB='*';
-// mémorise les choix (même téléphone, même semaine)
+// mémorise les CHOIX (pas les données) : si la page est mise à jour dans la
+// semaine (nouvel event…), les nouveautés apparaissent et les choix restent.
 const KEY='badass_'+(SEM.du||'');
-try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.week)Object.keys(s.week).forEach(b=>{if(WEEK[b]&&s.week[b].length===WEEK[b].length)WEEK[b]=s.week[b];});if(s&&s.sent)SENT=s.sent;}catch(e){}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({week:WEEK,sent:SENT}));}catch(e){}}
+BARS.forEach(b=>WEEK[b].forEach(d=>{d.def=d.open;}));
+function save(){try{const ch={};BARS.forEach(b=>{ch[b]={};WEEK[b].forEach(d=>{ch[b][d.date]={open:d.open,
+  m:Object.fromEntries(d.matches.map(m=>[m.t+'|'+m.h,m.on])),e:Object.fromEntries(d.entries.filter(e=>!e.custom).map(e=>[e.desc,e.on])),
+  c:d.entries.filter(e=>e.custom).map(e=>[e.desc,e.on])};});});
+ localStorage.setItem(KEY,JSON.stringify({ch:ch,sent:SENT}));}catch(e){}}
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s){SENT=s.sent||{};
+ BARS.forEach(b=>WEEK[b].forEach(d=>{const c=s.ch&&s.ch[b]&&s.ch[b][d.date];if(!c)return;d.open=c.open;
+  d.matches.forEach(m=>{const k=m.t+'|'+m.h;if(k in c.m)m.on=c.m[k];});
+  d.entries.forEach(e=>{if(e.desc in c.e)e.on=c.e[e.desc];});
+  (c.c||[]).forEach(([desc,on])=>d.entries.push({tag:'event',desc:desc,on:on,custom:true}));}));}}catch(e){}
 // un jour « normalement ouvert » coupé = fermeture exceptionnelle
-BARS.forEach(b=>WEEK[b].forEach(d=>{if(d.def===undefined)d.def=d.open;}));
 
 function vue(n){V=n;$('s1').classList.toggle('on',n===1);$('s2').classList.toggle('on',n===2);$('v1').classList.toggle('hide',n!==1);$('v2').classList.toggle('hide',n!==2);footer();window.scrollTo(0,0);}
 (function(){const a=new Date(SEM.du+'T12:00'),b=new Date(SEM.au+'T12:00');
